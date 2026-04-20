@@ -1,7 +1,4 @@
-"""
-routers/games.py
-Alle Game-Endpunkte: erstellen, auflisten, anzeigen, Zug machen, löschen.
-"""
+
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -61,9 +58,7 @@ def make_move_endpoint(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """
-    Macht einen Zug an Position 1–9. Wähle dein Symbol (X oder O).
-    """
+   
     game = crud.get_game(db, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Spiel nicht gefunden.")
@@ -90,14 +85,14 @@ def make_move_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    # Status prüfen nach Spieler-Zug
+
     if winner:
         game = crud.update_game(db, game, new_board, symbol, f"won_{winner}")
-        game.message = f"Glückwunsch! {winner} hat gewonnen! 🎉"
+        game.message = f"Glückwunsch! {winner} hat gewonnen"
         return game
     elif draw:
         game = crud.update_game(db, game, new_board, symbol, "draw")
-        game.message = "Unentschieden! Keine Züge mehr möglich. 🤝"
+        game.message = "Unentschieden! Keine Züge mehr möglich"
         return game
         
     next_player = "O" if symbol == "X" else "X"

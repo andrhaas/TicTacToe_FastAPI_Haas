@@ -2,7 +2,6 @@ from pydantic import BaseModel, field_validator
 from datetime import datetime
 
 
-#Auth Schemas
 
 class UserRegister(BaseModel):
     username: str
@@ -12,14 +11,14 @@ class UserRegister(BaseModel):
     @classmethod
     def username_not_empty(cls, v: str) -> str:
         if not v.strip():
-            raise ValueError("Username must not be empty")
+            raise ValueError("Username darf ned leer sein")
         return v.strip()
 
     @field_validator("password")
     @classmethod
     def password_min_length(cls, v: str) -> str:
         if len(v) < 4:
-            raise ValueError("Password must be at least 4 characters")
+            raise ValueError("Password muss länger als 4 zeichn sein")
         return v
 
 
@@ -36,7 +35,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
-# Game Schemas
+
 
 class GameResponse(BaseModel):
     id: int

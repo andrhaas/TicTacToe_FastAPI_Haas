@@ -5,7 +5,7 @@ from app import games
 
 app = FastAPI(
     title="TicTacToe API",
-    description="A REST API for playing TicTacToe with user authentication.",
+    description="",
     version="1.0.0",
 )
 

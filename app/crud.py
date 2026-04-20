@@ -9,9 +9,7 @@ from app.security import hash_password
 from app.game_logic import empty_board
 
 
-# ---------------------------------------------------------------------------
-# User
-# ---------------------------------------------------------------------------
+
 
 def get_user_by_username(db: Session, username: str) -> models.User | None:
     return db.query(models.User).filter(models.User.username == username).first()
@@ -26,9 +24,7 @@ def create_user(db: Session, user_data: schemas.UserRegister) -> models.User:
     return user
 
 
-# ---------------------------------------------------------------------------
-# Game
-# ---------------------------------------------------------------------------
+
 
 def create_game(db: Session, owner_id: int, player_symbol: str) -> models.Game:
     game = models.Game(

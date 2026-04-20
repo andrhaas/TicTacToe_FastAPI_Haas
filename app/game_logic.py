@@ -1,7 +1,4 @@
-"""
-game_logic.py
-Spiellogik: Gewinncheck, Unentschieden, Zugvalidierung.
-"""
+
 
 import random
 
@@ -93,19 +90,3 @@ def get_current_player(board_str: str) -> str:
     return "X" if x_count <= o_count else "O"
 
 
-def make_bot_move(board_str: str, symbol: str) -> tuple[str, str | None, bool]:
-    """
-    Führt einen einfachen zufälligen Bot-Zug aus.
-    Gibt (neuer_board_string, gewinner, unentschieden) zurück.
-    """
-    board = board_from_string(board_str)
-    empty_indices = [i for i, val in enumerate(board) if val == "."]
-    
-    if not empty_indices:
-        return board_str, check_winner(board), is_draw(board)
-        
-    choice = random.choice(empty_indices)
-    board[choice] = symbol
-    
-    new_board_str = board_to_string(board)
-    return new_board_str, check_winner(board), is_draw(board)
