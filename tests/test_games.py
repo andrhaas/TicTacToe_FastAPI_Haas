@@ -80,6 +80,21 @@ def test_auth_make_move():
     assert data['board'][0] == 'X'
     
     
+def test_auth_make_move_at_position_9():
+    client.post('/auth/register', data={'username':'testuser4', 'password':'pw3'})
+    token_response = client.post('/auth/login', data={'username':'testuser4', 'password':'pw3'})
+    token = token_response.json()['access_token']
+    headers = {'Authorization': f'Bearer {token}'}
+    
+    game_response = client.post('/games/?player_symbol=X', headers=headers)
+    game_id = game_response.json()['id']
+    
+    response = client.put(f'/games/{game_id}/move/10?symbol=X', headers=headers)
+    assert response.status_code == 400
+    data = response.json()
+    assert data['detail'] == 'Position muss zwischen 1 und 9 liegen.'
+    
+    
     
     
     
@@ -117,5 +132,20 @@ def test_game_in_db():
 
     assert game_in_db is not None
     assert game_in_db.id == game_id
+
+
+def test_get_games_by_username():
+    client.post('/auth/register', data={'username':'testuser_games', 'password':'pw1'})
+    token_response = client.post('/auth/login', data={'username':'testuser_games', 'password':'pw1'})
+    token = token_response.json()['access_token']
+    
+    client.post('/games/', headers={'Authorization': f'Bearer {token}'})
+    client.post('/games/', headers={'Authorization': f'Bearer {token}'})
+    
+    response = client.get('/games/user/testuser_games', headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
+    games = response.json()
+    assert isinstance(games, list)
+    assert len(games) >= 2
 
 

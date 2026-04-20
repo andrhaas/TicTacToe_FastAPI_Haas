@@ -18,7 +18,7 @@ def create_game(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Erstellt ein neues TicTacToe-Spiel für den eingeloggten Benutzer. Wähle 'X' oder 'O'."""
+  
     player_symbol = player_symbol.upper()
     if player_symbol not in ["X", "O"]:
         raise HTTPException(status_code=400, detail="Symbol muss 'X' oder 'O' sein.")
@@ -33,8 +33,18 @@ def list_games(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Gibt alle Spiele zurück (inkl. Board-Status und Spielverlauf)."""
     return crud.get_all_games(db)
+
+
+@router.get("/user/{username}", response_model=list[schemas.GameResponse])
+def get_games_by_username(
+    username: str,
+    db: Session = Depends(get_db)
+):
+    user = crud.get_user_by_username(db, username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.games
 
 
 @router.get("/{game_id}", response_model=schemas.GameResponse)
@@ -52,13 +62,28 @@ def get_game(
 
 @router.put("/{game_id}/move/{position}", response_model=schemas.GameResponse)
 def make_move_endpoint(
+  
+    
+    
     game_id: int,
     position: int,
     symbol: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
+    """
+    Aufbau des Spielfelds:
    
+    ```
+     1 | 2 | 3 
+    -----------
+     4 | 5 | 6 
+    -----------
+     7 | 8 | 9 
+    ```
+
+    Bitte gib als position eine Zahl zwischen 1 und 9 ein.
+    """
     game = crud.get_game(db, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Spiel nicht gefunden.")
@@ -108,7 +133,7 @@ def delete_game(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Löscht ein abgeschlossenes Spiel."""
+
     game = crud.get_game(db, game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Spiel nicht gefunden.")
