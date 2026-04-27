@@ -33,7 +33,7 @@ def set_game_list_message(game: models.Game, current_user_id: int):
     if game.status.startswith("won_"):
         winner_symbol = game.status.split("_")[1]
         
-        # Finde heraus, wer gewonnen hat
+        # wer hat gwonnen
         if winner_symbol == game.player_symbol:
             winner_id = game.owner_id
             winner_username = game.owner.username if game.owner else "Unbekannt"
@@ -78,6 +78,42 @@ def get_games_by_username(
     for game in games:
         set_game_list_message(game, current_user.id)
     return games
+
+
+def is_winner(game: models.Game, user_id: int) -> bool:
+    if not game.status.startswith("won_"):
+        return False
+    winner_symbol = game.status.split("_")[1]
+    if winner_symbol == game.player_symbol:
+        return game.owner_id == user_id
+    else:
+        return game.player2_id == user_id
+
+
+@router.get("/me/won", response_model=list[schemas.GameResponse])
+def get_won_games(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    games = crud.get_user_games(db, current_user.id)
+    won_games = [g for g in games if is_winner(g, current_user.id)]
+    for game in won_games:
+        set_game_list_message(game, current_user.id)
+    return won_games
+
+
+@router.get("/me/lost", response_model=list[schemas.GameResponse])
+def get_lost_games(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    games = crud.get_user_games(db, current_user.id)
+    # Verloren hat man, wenn ein Spieler gewonnen hat und man selbst es nicht war
+    lost_games = [g for g in games if g.status.startswith("won_") and not is_winner(g, current_user.id)]
+    for game in lost_games:
+        set_game_list_message(game, current_user.id)
+    return lost_games
+
 
 
 @router.get("/{game_id}", response_model=schemas.GameResponse)
@@ -138,15 +174,39 @@ def make_move_endpoint(
     if symbol != expected_player:
          raise HTTPException(status_code=400, detail=f"Du bist nicht dran. Aktueller Spieler ist {expected_player}.")
 
-    # Logge den zweiten Spieler, falls noch nicht gesetzt und es sich nicht um den Ersteller handelt
-    if game.owner_id != current_user.id and game.player2_id is None:
+    # Schummeln verboten halt stop
+    owner_symbol = game.player_symbol
+    player2_symbol = "O" if owner_symbol == "X" else "X"
+
+    if current_user.id == game.owner_id:
+        if symbol != owner_symbol:
+            raise HTTPException(status_code=403, detail=f"Cheat-Schutz: Du bist Spieler {owner_symbol}!")
+    elif game.player2_id is not None and current_user.id == game.player2_id:
+        if symbol != player2_symbol:
+            raise HTTPException(status_code=403, detail=f"Cheat-Schutz: Du bist Spieler {player2_symbol}!")
+    elif game.player2_id is None:
+        # Der Spieler versucht beizutreten
+        if symbol != player2_symbol:
+            raise HTTPException(status_code=403, detail=f"Cheat-Schutz: Das andere Symbol ({owner_symbol}) gehört bereits dem Raum-Ersteller!")
+        # Logge den zweiten Spieler, falls noch nicht gesetzt
         game.player2_id = current_user.id
+    else:
+        raise HTTPException(status_code=403, detail="Cheat-Schutz: Du bist nicht Teil dieses Spiels!")
+    
 
     try:
         new_board, winner, draw = make_move(game.board, position, symbol)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Züge in datenbank speichern tuff
+    crud.create_move(
+        db, 
+        game_id=game_id, 
+        user_id=current_user.id, 
+        position=position, 
+        symbol=symbol
+    )
 
     if winner:
         game = crud.update_game(db, game, new_board, symbol, f"won_{winner}")
@@ -162,6 +222,20 @@ def make_move_endpoint(
     game.message = f"Guter Zug von {symbol}. Spieler {next_player} ist jetzt am Zug."
 
     return game
+
+
+@router.get("/{game_id}/moves", response_model=list[schemas.MoveResponse])
+def get_game_moves(
+    game_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Gibt die Move-Historie eines Spiels zurück."""
+    game = crud.get_game(db, game_id)
+    if not game:
+        raise HTTPException(status_code=404, detail="Spiel nicht gefunden.")
+    
+    return crud.get_game_moves(db, game_id)
 
 
 @router.delete("/{game_id}", status_code=status.HTTP_204_NO_CONTENT)

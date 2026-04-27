@@ -71,3 +71,20 @@ def delete_game(db: Session, game_id: int) -> bool:
     db.delete(game)
     db.commit()
     return True
+
+
+def create_move(db: Session, game_id: int, user_id: int, position: int, symbol: str) -> models.Move:
+    move = models.Move(
+        game_id=game_id,
+        user_id=user_id,
+        position=position,
+        symbol=symbol
+    )
+    db.add(move)
+    db.commit()
+    db.refresh(move)
+    return move
+
+def get_game_moves(db: Session, game_id: int) -> list[models.Move]:
+    return db.query(models.Move).filter(models.Move.game_id == game_id).order_by(models.Move.created_at).all()
+

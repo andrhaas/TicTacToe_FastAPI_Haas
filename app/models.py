@@ -34,6 +34,7 @@ class Game(Base):
 
     owner = relationship("User", back_populates="games", foreign_keys=[owner_id])
     player2 = relationship("User", back_populates="games_as_player2", foreign_keys=[player2_id])
+    moves = relationship("Move", back_populates="game", cascade="all, delete-orphan")
 
     @property
     def formatted_board(self) -> list[str]:
@@ -45,4 +46,17 @@ class Game(Base):
             "-----------",
             f" {b[6]} | {b[7]} | {b[8]} "
         ]
+
+class Move(Base):
+    __tablename__ = "moves"
+
+    id = Column(Integer, primary_key=True, index=True)
+    game_id = Column(Integer, ForeignKey("games.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    position = Column(Integer, nullable=False)
+    symbol = Column(String(1), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    game = relationship("Game", back_populates="moves")
+    user = relationship("User")
 

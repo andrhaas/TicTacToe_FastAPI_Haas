@@ -55,7 +55,10 @@ class GameResponse(BaseModel):
 
 class MoveResponse(BaseModel):
     id: int
-    board: str
-    current_player: str
-    status: str
-    message: str
+    game_id: int
+    user_id: int
+    position: int
+    symbol: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
