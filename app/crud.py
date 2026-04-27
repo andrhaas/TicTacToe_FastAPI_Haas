@@ -48,6 +48,13 @@ def get_all_games(db: Session) -> list[models.Game]:
     return db.query(models.Game).all()
 
 
+def get_user_games(db: Session, user_id: int) -> list[models.Game]:
+    from sqlalchemy import or_
+    return db.query(models.Game).filter(
+        or_(models.Game.owner_id == user_id, models.Game.player2_id == user_id)
+    ).all()
+
+
 def update_game(db: Session, game: models.Game, board: str, current_player: str, status: str) -> models.Game:
     game.board = board
     game.current_player = current_player

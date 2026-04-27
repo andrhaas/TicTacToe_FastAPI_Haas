@@ -40,6 +40,7 @@ class Token(BaseModel):
 class GameResponse(BaseModel):
     id: int
     owner_id: int
+    player2_id: int | None = None
     player_symbol: str
     board: str
     formatted_board: list[str]

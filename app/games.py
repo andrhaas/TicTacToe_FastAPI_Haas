@@ -28,23 +28,56 @@ def create_game(
     return game
 
 
+def set_game_list_message(game: models.Game, current_user_id: int):
+    """Setzt eine benutzerfreundliche Nachricht für die Spielübersicht."""
+    if game.status.startswith("won_"):
+        winner_symbol = game.status.split("_")[1]
+        
+        # Finde heraus, wer gewonnen hat
+        if winner_symbol == game.player_symbol:
+            winner_id = game.owner_id
+            winner_username = game.owner.username if game.owner else "Unbekannt"
+        else:
+            winner_id = game.player2_id
+            winner_username = game.player2.username if game.player2 else "Unbekannt"
+            
+        # Überprüfe, ob der eingeloggte User gewonnen hat
+        if winner_id == current_user_id:
+            game.message = "Du hast gewonnen!"
+        else:
+            game.message = f"{winner_username} hat gewonnen!"
+            
+    elif game.status == "draw":
+        game.message = "Unentschieden!"
+    else:
+        game.message = "Spiel läuft noch..."
+
+
 @router.get("/", response_model=list[schemas.GameResponse])
 def list_games(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    return crud.get_all_games(db)
+    games = crud.get_all_games(db)
+    for game in games:
+        set_game_list_message(game, current_user.id)
+    return games
 
 
 @router.get("/user/{username}", response_model=list[schemas.GameResponse])
 def get_games_by_username(
     username: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
     user = crud.get_user_by_username(db, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return user.games
+    
+    games = crud.get_user_games(db, user.id)
+    for game in games:
+        set_game_list_message(game, current_user.id)
+    return games
 
 
 @router.get("/{game_id}", response_model=schemas.GameResponse)
@@ -104,6 +137,10 @@ def make_move_endpoint(
     expected_player = get_current_player(game.board)
     if symbol != expected_player:
          raise HTTPException(status_code=400, detail=f"Du bist nicht dran. Aktueller Spieler ist {expected_player}.")
+
+    # Logge den zweiten Spieler, falls noch nicht gesetzt und es sich nicht um den Ersteller handelt
+    if game.owner_id != current_user.id and game.player2_id is None:
+        game.player2_id = current_user.id
 
     try:
         new_board, winner, draw = make_move(game.board, position, symbol)

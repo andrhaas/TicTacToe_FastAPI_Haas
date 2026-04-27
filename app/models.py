@@ -12,7 +12,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    games = relationship("Game", back_populates="owner")
+    games = relationship("Game", back_populates="owner", foreign_keys="[Game.owner_id]")
+    games_as_player2 = relationship("Game", back_populates="player2", foreign_keys="[Game.player2_id]")
 
 
 class Game(Base):
@@ -20,6 +21,7 @@ class Game(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    player2_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     board = Column(String(9), default=".........", nullable=False)
     current_player = Column(String(1), default="X", nullable=False)
@@ -30,7 +32,8 @@ class Game(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
 
-    owner = relationship("User", back_populates="games")
+    owner = relationship("User", back_populates="games", foreign_keys=[owner_id])
+    player2 = relationship("User", back_populates="games_as_player2", foreign_keys=[player2_id])
 
     @property
     def formatted_board(self) -> list[str]:
