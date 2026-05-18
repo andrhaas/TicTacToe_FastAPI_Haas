@@ -47,7 +47,7 @@ Konkrete Teilziele der heutigen Einheit:
 - Funktioniert auch wenn sich ein Spieler versucht einzuschleichen
 
 ## 4. Aktueller Commit
-https://github.com/andrhaas/TicTacToe_FastAPI_Haas/commit/07ed3226f732a46a7481b2014bcdb3949dbf6e00
+https://github.com/andrhaas/TicTacToe_FastAPI_Haas/commit/1c8b9247b3d4c25a91706d60afd99606bd1f364b
 
 ## 5. Diff
 diff --git a/app/crud.py b/app/crud.py
